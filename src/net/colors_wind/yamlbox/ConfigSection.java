@@ -69,10 +69,6 @@ public class ConfigSection {
 		return elements.remove(key);
 	}
 
-	public ConfigObject getConfigObjectDeep(@NonNull String key) {
-		return new ConfigObject(parent, new StringBuilder(cachePath).append(DOT).append(key).toString(),
-				getObjectDeep(key));
-	}
 
 	public Object getObjectDeep(@NonNull String key) {
 		StringTokenizer str = new StringTokenizer(key, DOT);
@@ -81,11 +77,6 @@ public class ConfigSection {
 			obj = ((Map<?, ?>) obj).get(str.nextElement());
 		}
 		return obj;
-	}
-	
-	public ConfigObject getConfigObject(@NonNull String key) {
-		return new ConfigObject(parent, new StringBuilder(cachePath).append(DOT).append(key).toString(),
-				getObject(key));
 	}
 
 	public Object getObject(@NonNull String key) {
