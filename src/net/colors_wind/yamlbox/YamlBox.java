@@ -17,13 +17,17 @@ import net.colors_wind.yamlbox.resolve.UniversalResolver;
 import net.colors_wind.yamlbox.resolve.YamlSerializable;
 
 public class YamlBox {
-	protected final Yaml yaml = new Yaml();
-	protected final Map<String, ResolverBase> resolvers = new HashMap<>();
+	protected final Yaml yaml;
+	protected final Map<String, ResolverBase> resolvers;
 	@Getter
 	protected final ILogger logger;
 	
 	public YamlBox(ILogger logger) {
 		this.logger = logger;
+		this.yaml = new Yaml();
+		this.resolvers = new HashMap<>();
+		this.resolvers.put(UniversalResolver.UNIVERSAL, new UniversalResolver(this));
+		this.resolvers.put(EntryResolver.ENTRY, new EntryResolver(this));
 	}
 
 	public boolean addResolver(String name, ResolverBase resolver) {

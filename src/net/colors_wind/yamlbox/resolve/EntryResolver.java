@@ -35,8 +35,13 @@ public class EntryResolver extends ResolverBase {
 		} while ((clazz = clazz.getSuperclass()) != Object.class);
 		return list.toArray(new Field[list.size()]);
 	};
+	
 
-	public EntryResolver(YamlBox yamlBox, String uniqueName) {
+	public EntryResolver(YamlBox yamlBox) {
+		super(yamlBox, ENTRY);
+	}
+	
+	protected EntryResolver(YamlBox yamlBox, String uniqueName) {
 		super(yamlBox, uniqueName);
 	}
 

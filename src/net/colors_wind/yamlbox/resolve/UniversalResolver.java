@@ -36,6 +36,11 @@ public class UniversalResolver extends ResolverBase {
 	public UniversalResolver(YamlBox yamlBox) {
 		super(yamlBox, UNIVERSAL);
 	}
+	
+	protected UniversalResolver(YamlBox yamlBox, String uniqueName) {
+		super(yamlBox, uniqueName);
+	}
+
 
 	@Getter
 	@Setter
