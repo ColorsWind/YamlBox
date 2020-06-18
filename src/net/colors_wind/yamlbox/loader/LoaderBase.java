@@ -6,6 +6,9 @@ import java.lang.reflect.Type;
 import lombok.Data;
 import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
+import net.colors_wind.yamlbox.annotation.ConfigNode;
+import net.colors_wind.yamlbox.annotation.SerializeNode;
+import net.colors_wind.yamlbox.annotation.YamlSerializable;
 
 public abstract class LoaderBase {
 	

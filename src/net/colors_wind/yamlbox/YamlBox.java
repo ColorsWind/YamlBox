@@ -10,11 +10,11 @@ import java.util.Optional;
 import org.yaml.snakeyaml.Yaml;
 
 import lombok.Getter;
+import net.colors_wind.yamlbox.annotation.YamlSerializable;
 import net.colors_wind.yamlbox.loader.EntryLoader;
 import net.colors_wind.yamlbox.loader.ILogger;
 import net.colors_wind.yamlbox.loader.LoaderBase;
 import net.colors_wind.yamlbox.loader.UniversalLoader;
-import net.colors_wind.yamlbox.loader.YamlSerializable;
 
 public class YamlBox {
 	protected final Yaml yaml;
