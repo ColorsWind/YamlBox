@@ -1,46 +1,35 @@
 package net.colors_wind.yamlbox.resolve;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+
 import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
 
 public class EntryResolver extends ResolverBase {
 
 	public static final String ENTRY = "entry";
-	public static final IFieldSelector SELECTOR_PUBLIC = clazz -> {
-		Field[] fields = clazz.getFields();
-		ArrayList<Field> list = new ArrayList<>(fields.length);
-		for (Field field : fields) {
-			field.setAccessible(true);
-			if (!Modifier.isStatic(field.getModifiers())) {
-				list.add(field);
-			}
-		}
-		return list.toArray(new Field[list.size()]);
-	};
-
-	public static final IFieldSelector SELECTOR_DECLARE = clazz -> {
-		Field[] fields = clazz.getDeclaredFields();
-		ArrayList<Field> list = new ArrayList<>();
-		do {
-			for (Field field : fields) {
-				field.setAccessible(true);
-				if (!Modifier.isStatic(field.getModifiers())) {
-					list.add(field);
-				}
-			}
-		} while ((clazz = clazz.getSuperclass()) != Object.class);
-		return list.toArray(new Field[list.size()]);
-	};
-	
+	public static final Set<Class<?>> DIRECT_FINAL = new HashSet<>();
+	static {
+		DIRECT_FINAL.addAll(Arrays.asList(boolean.class, Boolean.class));
+		DIRECT_FINAL.addAll(Arrays.asList(byte.class, Byte.class));
+		DIRECT_FINAL.addAll(Arrays.asList(short.class, Short.class));
+		DIRECT_FINAL.addAll(Arrays.asList(int.class, Integer.class));
+		DIRECT_FINAL.addAll(Arrays.asList(long.class, Long.class));
+		DIRECT_FINAL.addAll(Arrays.asList(double.class, Double.class));
+		DIRECT_FINAL.addAll(Arrays.asList(float.class, Float.class));
+		DIRECT_FINAL.add(String.class);
+	}
 
 	public EntryResolver(YamlBox yamlBox) {
 		super(yamlBox, ENTRY);
 	}
-	
+
 	protected EntryResolver(YamlBox yamlBox, String uniqueName) {
 		super(yamlBox, uniqueName);
 	}
@@ -49,34 +38,27 @@ public class EntryResolver extends ResolverBase {
 			String path) throws InstantiationException, IllegalAccessException {
 		T instance = clazz.newInstance();
 		for (Field field : selector.apply(clazz)) {
-			// 预处理, 准备 Logger 和 Resolver
-			ConfigNode ann = field.getAnnotation(ConfigNode.class);
-			String key; 
-			ResolverBase resolver;
-			if (ann == null) {
-				key = field.getName();
-				resolver = yamlBox.getDefaultResolver();
-			} else {
-				key = ann.path().isEmpty() ? field.getName() : ann.path();
-				resolver = yamlBox.getResolver(ann.resolver()).orElseGet(() -> {
-					yamlBox.getLogger().warning(key, new StringBuilder("CANNOT find resolver\" ").append(ann.resolver())
-							.append(" \", using ").append(UniversalResolver.UNIVERSAL).append(" instead.").toString());
-					return yamlBox.getDefaultResolver(clazz);
-				});
-			}
-			Object obj = config.getObjectDeep(key);
-			Class<?> fieldType = field.getDeclaringClass();
-			String nodePath = new StringBuilder(path).append(key).toString();
+			NodeInf inf = this.getNodeInf(field);
+			Class<?> fieldType = field.getType();
+			ResolverBase resolver = inf.getResolver();
+			Object obj = config.getObjectDeep(inf.getKey());
 			try {
-				if (fieldType.isPrimitive()) {
-					handlePrimitiveType(field, fieldType, instance, obj, resolver, nodePath);
+				if (resolver instanceof EntryResolver) {
+					((EntryResolver) resolver).resolve(clazz, inf.getSelector(), config.getSectionDeep(path),
+							inf.getRealPath(path));
 				} else {
-					Object value = resolver.resolve(fieldType, field.getGenericType(), obj, nodePath);
-					field.set(instance, value);
+					if (fieldType.isPrimitive()) {
+						handlePrimitiveType(field, fieldType, instance, obj, resolver, inf.getRealPath(path));
+					} else {
+						Object value = resolver.resolve(fieldType, field.getGenericType(), obj, inf.getRealPath(path));
+						field.set(instance, value);
+					}
 				}
 			} catch (Exception e) {
 				e.printStackTrace();
-				yamlBox.getLogger().warning(nodePath, new StringBuilder("Exception occured while processing Field ").append(clazz.getSimpleName()).append(".").append(field.getName()).append(".").toString());
+				yamlBox.getLogger().warning(inf.getRealPath(path),
+						new StringBuilder("Exception occured while processing Field ").append(clazz.getSimpleName())
+								.append(".").append(field.getName()).append(".").toString());
 				continue;
 			}
 		}
@@ -101,7 +83,40 @@ public class EntryResolver extends ResolverBase {
 			boolean b = resolver.resolveAsBoolean(instance, path);
 			field.setBoolean(instance, b);
 		}
-		throw new UnsupportedOperationException("Unexpected exception!");
+		throw new UnsupportedOperationException("Unexpected primitive type!");
+	}
+
+	public <T extends YamlSerializable> Map<String, Object> store(Class<T> clazz, IFieldSelector selector, T instance,
+			String path) throws InstantiationException, IllegalAccessException {
+		Map<String, Object> storeMap = new LinkedHashMap<>();
+		for (Field field : selector.apply(clazz)) {
+			Object obj = field.get(instance);
+			Class<?> type = obj.getClass();
+			Type genericType = field.getGenericType();
+			NodeInf inf = this.getNodeInf(field);
+			ResolverBase resolver = inf.getResolver();
+			try {
+				if (resolver instanceof EntryResolver) {
+					EntryResolver entryResolver = (EntryResolver) resolver;
+					@SuppressWarnings("unchecked")
+					Class<YamlSerializable> entryType = (Class<YamlSerializable>) type;
+					Map<String, Object> map = entryResolver.store(entryType, inf.getSelector(), (YamlSerializable) obj,
+							path);
+					storeMap.put(inf.getKey(), map);
+				} else {
+					Object real = inf.getResolver().store(type, genericType, obj, inf.getRealPath(path));
+					storeMap.put(inf.getKey(), real);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				yamlBox.getLogger().warning(inf.getRealPath(path),
+						new StringBuilder("Exception occurs while storing YamlSerializable. ").append(obj.toString())
+								.toString());
+				continue;
+			}
+
+		}
+		return storeMap;
 	}
 
 	@Override
@@ -109,11 +124,28 @@ public class EntryResolver extends ResolverBase {
 		return YamlSerializable.class.isAssignableFrom(clazz);
 	}
 
-	@SuppressWarnings("unchecked")
-	@Override
-	public Object resolve(Class<?> clazz, Type genericType, Object obj, String path) throws InstantiationException, IllegalAccessException {
-		return resolve((Class<YamlSerializable>) clazz, SELECTOR_PUBLIC, (ConfigSection)obj, path);
+	public IFieldSelector getFieldSelector(Class<?> clazz) {
+		SerializeNode ann = clazz.getAnnotation(SerializeNode.class);
+		IFieldSelector selector;
+		if (ann != null) {
+			selector = ann.fieldSelector();
+		} else {
+			selector = FieldSelector.SELECTOR_PUBLIC;
+		}
+		return selector;
 	}
 
+	@SuppressWarnings("unchecked")
+	@Override
+	public Object resolve(Class<?> clazz, Type genericType, Object obj, String path)
+			throws InstantiationException, IllegalAccessException {
+		return resolve((Class<YamlSerializable>) clazz, getFieldSelector(clazz), (ConfigSection) obj, path);
+	}
+
+	@SuppressWarnings("unchecked")
+	@Override
+	public Map<String, Object> store(Class<?> clazz, Type genericType, Object obj, String path) throws Exception {
+		return store((Class<YamlSerializable>) clazz, getFieldSelector(clazz), (YamlSerializable) obj, path);
+	}
 
 }

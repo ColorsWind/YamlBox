@@ -1,7 +1,10 @@
 package net.colors_wind.yamlbox.resolve;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 
+import lombok.Data;
+import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
 
 public abstract class ResolverBase {
@@ -43,6 +46,8 @@ public abstract class ResolverBase {
 	 */
 	public abstract Object resolve(Class<?> clazz, Type genericType, Object obj, String path) throws Exception;
 	
+	public abstract Object store(Class<?> clazz, Type genericType, Object obj, String path) throws Exception;
+	
 	public int resolveAsInt(Object obj, String path) {
 		throw new UnsupportedOperationException();
 	}
@@ -79,7 +84,39 @@ public abstract class ResolverBase {
 		return this.yamlBox.forceAddResolver(uniqueName, this);
 	}
 	
+	
+	@Data
+	class NodeInf {
+		private final String key;
+		private final ResolverBase resolver;
+		private final IFieldSelector selector;
+		
+		public String getRealPath(String origin) {
+			return new StringBuilder(origin).append(ConfigSection.DOT).append(key).toString();
+		}
+	}
 
+	public NodeInf getNodeInf(Field field) {
+		Class<?> clazz = field.getDeclaringClass();
+		SerializeNode sNode = field.getAnnotation(SerializeNode.class);
+		ConfigNode cNode = field.getAnnotation(ConfigNode.class);
+		String key; 
+		ResolverBase resolver;
+		IFieldSelector selector;
+		if (cNode == null) {
+			key = field.getName();
+			resolver = yamlBox.getDefaultResolver(clazz);
+		} else {
+			key = cNode.path().isEmpty() ? field.getName() : cNode.path();
+			resolver = yamlBox.getResolver(cNode.resolver()).orElseGet(() -> yamlBox.getDefaultResolver(clazz));
+		}
+		if (YamlSerializable.class.isAssignableFrom(clazz) && sNode != null) {
+			selector = sNode.fieldSelector();
+		} else {
+			selector = FieldSelector.SELECTOR_PUBLIC;
+		}
+		return new NodeInf(key, resolver, selector);
+	}
 	
 
 }

@@ -10,6 +10,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalDouble;
@@ -25,12 +26,12 @@ import net.colors_wind.yamlbox.YamlBox;
 public class UniversalResolver extends ResolverBase {
 
 	public static final String UNIVERSAL = "universal";
-	public static final Set<Class<?>> ACCEPT = new HashSet<>();
+	public static final Set<Class<?>> ACCEPT_FINAL = new HashSet<>();
 	static {
-		ACCEPT.addAll(Arrays.asList(boolean.class, Boolean.class));
-		ACCEPT.addAll(Arrays.asList(int.class, Integer.class, OptionalInt.class));
-		ACCEPT.addAll(Arrays.asList(long.class, Long.class, OptionalLong.class));
-		ACCEPT.addAll(Arrays.asList(double.class, Double.class, OptionalDouble.class));
+		ACCEPT_FINAL.addAll(Arrays.asList(boolean.class, Boolean.class));
+		ACCEPT_FINAL.addAll(Arrays.asList(int.class, Integer.class, OptionalInt.class));
+		ACCEPT_FINAL.addAll(Arrays.asList(long.class, Long.class, OptionalLong.class));
+		ACCEPT_FINAL.addAll(Arrays.asList(double.class, Double.class, OptionalDouble.class));
 	}
 	
 	public UniversalResolver(YamlBox yamlBox) {
@@ -48,7 +49,7 @@ public class UniversalResolver extends ResolverBase {
 
 	@Override
 	public boolean canAccept(Class<?> clazz) {
-		return ACCEPT.contains(clazz);
+		return ACCEPT_FINAL.contains(clazz) || clazz.isEnum();
 	}
 
 	@Override
@@ -98,6 +99,69 @@ public class UniversalResolver extends ResolverBase {
 		}
 		throw new UnsupportedOperationException();
 	}
+	
+	@Override
+	public Object store(Class<?> clazz, Type genericType, Object obj, String path) throws Exception {
+		if (OptionalInt.class == clazz) {
+			OptionalInt opt = (OptionalInt) obj;
+			return opt.isPresent() ? Integer.valueOf(opt.getAsInt()) : null;
+		} else if (OptionalDouble.class == clazz) {
+			OptionalDouble opt = (OptionalDouble) obj;
+			return opt.isPresent() ? Double.valueOf(opt.getAsDouble()) : null;
+		} else if (OptionalLong.class == clazz) {
+			OptionalLong opt = (OptionalLong) obj;
+			return opt.isPresent() ? Long.valueOf(opt.getAsLong()) : null;
+		} else if (Optional.class == clazz) {
+			Optional<?> opt = (Optional<?>) obj;
+			if (opt.isPresent()) {
+				Object real = opt.get();
+				return store(real.getClass(), null, real, path);
+			}
+			return null;
+		} else if (List.class.isAssignableFrom(clazz)) {
+			List<?> list = (List<?>) obj;
+			if (list.isEmpty()) {
+				return list;
+			} else {
+				Object top = list.get(0);
+				Class<?> type = top.getClass();
+				List<Object> storeList = new ArrayList<>(list.size());
+				for(Object real : list) {
+					try {
+						storeList.add(store(type, null, real, path));
+					} catch (Exception e) {
+						e.printStackTrace();
+						yamlBox.getLogger().warning(path, new StringBuilder("Exception occurs while rewrap a list. ").append(real.toString()).toString());
+					}
+				}
+				return storeList;
+			}
+		} else if (Map.class.isAssignableFrom(clazz)) {
+			Map<?,?> map = (Map<?, ?>) obj;
+			if (map.isEmpty()) {
+				return map;
+			} else {
+				Map<Object, Object> storeMap = new LinkedHashMap<>();
+				Entry<?, ?> top = map.entrySet().iterator().next();
+				Class<?> keyType = top.getKey().getClass();
+				Class<?> valueType = top.getValue().getClass();
+				for(Entry<?,?> entry : map.entrySet()) {
+					try {
+						Object k = store(keyType, null, entry.getKey(), path);
+						Object v = store(valueType, null, entry.getValue(), path);
+						storeMap.put(k, v);
+					} catch (Exception e) {
+						e.printStackTrace();
+						yamlBox.getLogger().warning(path, new StringBuilder("Exception occurs while rewrap a map. ").append(entry.toString()).toString());
+					}
+				}
+				return storeMap;
+			}
+		} else {
+			return Objects.toString(obj);
+		}
+	}
+
 
 	public Enum<?> resolveAsEnum(Object obj, String path, Class<?> clazz) {
 		if (obj instanceof Number) {
@@ -237,5 +301,6 @@ public class UniversalResolver extends ResolverBase {
 		}
 		return Float.parseFloat(obj.toString());
 	}
+
 
 }

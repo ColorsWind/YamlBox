@@ -21,7 +21,7 @@ public class YamlBox {
 	protected final Map<String, ResolverBase> resolvers;
 	@Getter
 	protected final ILogger logger;
-	
+
 	public YamlBox(ILogger logger) {
 		this.logger = logger;
 		this.yaml = new Yaml();
@@ -39,7 +39,16 @@ public class YamlBox {
 	}
 
 	public Optional<ResolverBase> getResolver(String name) {
-		return Optional.of(this.resolvers.get(name));
+		return Optional.ofNullable(this.resolvers.get(name));
+	}
+
+	public ResolverBase getResolver(String name, Class<?> clazz, String key) {
+		return getResolver(name).orElseGet(() -> {
+			ResolverBase resolver = getDefaultResolver(clazz);
+			logger.warning(key, new StringBuilder("CANNOT find resolver\" ").append(name).append(" \", using ")
+					.append(resolver).append(" instead.").toString());
+			return resolver;
+		});
 	}
 
 	public boolean removeResolver(String name) {
@@ -72,8 +81,9 @@ public class YamlBox {
 	}
 
 	public ResolverBase getDefaultResolver(Class<?> clazz) {
-		Optional<ResolverBase> option = YamlSerializable.class.isAssignableFrom(clazz) ?
-			getResolver(EntryResolver.ENTRY) : getResolver(UniversalResolver.UNIVERSAL);
+		Optional<ResolverBase> option = YamlSerializable.class.isAssignableFrom(clazz)
+				? getResolver(EntryResolver.ENTRY)
+				: getResolver(UniversalResolver.UNIVERSAL);
 		return option.orElseThrow(() -> new NullPointerException("CANNOT determine default resolver."));
 	}
 

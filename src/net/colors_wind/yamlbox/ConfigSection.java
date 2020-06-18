@@ -42,7 +42,16 @@ public class ConfigSection {
 	}
 	
 	public ConfigSection getSection(@NonNull String key) {
-		Object obj = elements.get(key);
+		Object obj = this.getObject(key);
+		return getSection0(obj, key);
+	}
+	
+	public ConfigSection getSectionDeep(@NonNull String key) {
+		Object obj = this.getObjectDeep(key);
+		return getSection0(obj, key);
+	}
+	
+	private ConfigSection getSection0(Object obj, String key) {
 		if (obj != null && Map.class.isAssignableFrom(obj.getClass())) {
 			return new ConfigSection(this, elements, key);
 		}
@@ -62,6 +71,9 @@ public class ConfigSection {
 	}
 
 	public void set(@NonNull String key, Object value) {
+		if (value != null && value instanceof ConfigSection) {
+			elements.put(key, ((ConfigSection)value).elements);
+		}
 		elements.put(key, value);
 	}
 
