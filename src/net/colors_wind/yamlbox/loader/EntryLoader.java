@@ -10,8 +10,8 @@ import java.util.Set;
 
 import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
-import net.colors_wind.yamlbox.annotation.SerializeNode;
-import net.colors_wind.yamlbox.annotation.YamlSerializable;
+import net.colors_wind.yamlbox.tag.SerializeNode;
+import net.colors_wind.yamlbox.tag.YamlSerializable;
 
 public class EntryLoader extends LoaderBase {
 

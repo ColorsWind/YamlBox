@@ -1,4 +1,4 @@
-package net.colors_wind.yamlbox.annotation;
+package net.colors_wind.yamlbox.tag;
 
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.ElementType.FIELD;

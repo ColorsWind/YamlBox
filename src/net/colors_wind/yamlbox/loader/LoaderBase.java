@@ -6,9 +6,9 @@ import java.lang.reflect.Type;
 import lombok.Data;
 import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
-import net.colors_wind.yamlbox.annotation.ConfigNode;
-import net.colors_wind.yamlbox.annotation.SerializeNode;
-import net.colors_wind.yamlbox.annotation.YamlSerializable;
+import net.colors_wind.yamlbox.tag.ConfigNode;
+import net.colors_wind.yamlbox.tag.SerializeNode;
+import net.colors_wind.yamlbox.tag.YamlSerializable;
 
 public abstract class LoaderBase {
 	
@@ -113,10 +113,15 @@ public abstract class LoaderBase {
 			key = cNode.path().isEmpty() ? field.getName() : cNode.path();
 			resolver = yamlBox.getResolver(cNode.loader()).orElseGet(() -> yamlBox.getDefaultResolver(clazz));
 		}
-		if (YamlSerializable.class.isAssignableFrom(clazz) && sNode != null) {
-			selector = sNode.fieldSelector();
-		} else {
+		if (YamlSerializable.class.isAssignableFrom(clazz)) {
+			if (sNode == null) {
+				sNode = clazz.getAnnotation(SerializeNode.class);
+			}
+		}
+		if (sNode == null) {
 			selector = FieldSelector.SELECTOR_PUBLIC;
+		} else {
+			selector = sNode.fieldSelector();	
 		}
 		return new NodeInf(key, resolver, selector);
 	}
