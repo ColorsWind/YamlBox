@@ -1,6 +1,8 @@
-package net.colors_wind.yamlbox.resolve;
+/**
+ * 
+ */
+package net.colors_wind.yamlbox.loader;
 
-import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -10,11 +12,15 @@ import java.lang.annotation.Target;
 
 @Documented
 @Retention(RUNTIME)
-@Target({TYPE,FIELD})
-public @interface SerializeNode {
-	
-	String resolver() default EntryResolver.ENTRY;
-	
-	FieldSelector fieldSelector(); 
+@Target(FIELD)
+/**
+ * @author colors_wind
+ * @date 2020/6/17
+ * @since 1.0.0
+ */
+public @interface ConfigNode {
 
+	String path() default "";
+	
+	String loader() default UniversalLoader.UNIVERSAL;
 }

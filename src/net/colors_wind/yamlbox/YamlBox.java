@@ -10,41 +10,41 @@ import java.util.Optional;
 import org.yaml.snakeyaml.Yaml;
 
 import lombok.Getter;
-import net.colors_wind.yamlbox.resolve.EntryResolver;
-import net.colors_wind.yamlbox.resolve.ILogger;
-import net.colors_wind.yamlbox.resolve.ResolverBase;
-import net.colors_wind.yamlbox.resolve.UniversalResolver;
-import net.colors_wind.yamlbox.resolve.YamlSerializable;
+import net.colors_wind.yamlbox.loader.EntryLoader;
+import net.colors_wind.yamlbox.loader.ILogger;
+import net.colors_wind.yamlbox.loader.LoaderBase;
+import net.colors_wind.yamlbox.loader.UniversalLoader;
+import net.colors_wind.yamlbox.loader.YamlSerializable;
 
 public class YamlBox {
 	protected final Yaml yaml;
-	protected final Map<String, ResolverBase> resolvers;
+	protected final Map<String, LoaderBase> loaders;
 	@Getter
 	protected final ILogger logger;
 
 	public YamlBox(ILogger logger) {
 		this.logger = logger;
 		this.yaml = new Yaml();
-		this.resolvers = new HashMap<>();
-		this.resolvers.put(UniversalResolver.UNIVERSAL, new UniversalResolver(this));
-		this.resolvers.put(EntryResolver.ENTRY, new EntryResolver(this));
+		this.loaders = new HashMap<>();
+		this.loaders.put(UniversalLoader.UNIVERSAL, new UniversalLoader(this));
+		this.loaders.put(EntryLoader.ENTRY, new EntryLoader(this));
 	}
 
-	public boolean addResolver(String name, ResolverBase resolver) {
-		return this.resolvers.putIfAbsent(name, resolver) == null;
+	public boolean addResolver(String name, LoaderBase resolver) {
+		return this.loaders.putIfAbsent(name, resolver) == null;
 	}
 
-	public boolean forceAddResolver(String name, ResolverBase resolver) {
-		return this.resolvers.put(name, resolver) == null;
+	public boolean forceAddResolver(String name, LoaderBase resolver) {
+		return this.loaders.put(name, resolver) == null;
 	}
 
-	public Optional<ResolverBase> getResolver(String name) {
-		return Optional.ofNullable(this.resolvers.get(name));
+	public Optional<LoaderBase> getResolver(String name) {
+		return Optional.ofNullable(this.loaders.get(name));
 	}
 
-	public ResolverBase getResolver(String name, Class<?> clazz, String key) {
+	public LoaderBase getResolver(String name, Class<?> clazz, String key) {
 		return getResolver(name).orElseGet(() -> {
-			ResolverBase resolver = getDefaultResolver(clazz);
+			LoaderBase resolver = getDefaultResolver(clazz);
 			logger.warning(key, new StringBuilder("CANNOT find resolver\" ").append(name).append(" \", using ")
 					.append(resolver).append(" instead.").toString());
 			return resolver;
@@ -52,7 +52,7 @@ public class YamlBox {
 	}
 
 	public boolean removeResolver(String name) {
-		return this.resolvers.remove(name) == null;
+		return this.loaders.remove(name) == null;
 	}
 
 	public YamlConfig load(String yamlString) {
@@ -76,14 +76,14 @@ public class YamlBox {
 		return yaml.dumpAsMap(config);
 	}
 
-	public ResolverBase getDefaultResolver() {
+	public LoaderBase getDefaultResolver() {
 		return getDefaultResolver(Object.class);
 	}
 
-	public ResolverBase getDefaultResolver(Class<?> clazz) {
-		Optional<ResolverBase> option = YamlSerializable.class.isAssignableFrom(clazz)
-				? getResolver(EntryResolver.ENTRY)
-				: getResolver(UniversalResolver.UNIVERSAL);
+	public LoaderBase getDefaultResolver(Class<?> clazz) {
+		Optional<LoaderBase> option = YamlSerializable.class.isAssignableFrom(clazz)
+				? getResolver(EntryLoader.ENTRY)
+				: getResolver(UniversalLoader.UNIVERSAL);
 		return option.orElseThrow(() -> new NullPointerException("CANNOT determine default resolver."));
 	}
 

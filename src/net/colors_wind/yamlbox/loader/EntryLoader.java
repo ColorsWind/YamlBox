@@ -1,4 +1,4 @@
-package net.colors_wind.yamlbox.resolve;
+package net.colors_wind.yamlbox.loader;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
@@ -11,7 +11,7 @@ import java.util.Set;
 import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
 
-public class EntryResolver extends ResolverBase {
+public class EntryLoader extends LoaderBase {
 
 	public static final String ENTRY = "entry";
 	public static final Set<Class<?>> DIRECT_FINAL = new HashSet<>();
@@ -26,11 +26,11 @@ public class EntryResolver extends ResolverBase {
 		DIRECT_FINAL.add(String.class);
 	}
 
-	public EntryResolver(YamlBox yamlBox) {
+	public EntryLoader(YamlBox yamlBox) {
 		super(yamlBox, ENTRY);
 	}
 
-	protected EntryResolver(YamlBox yamlBox, String uniqueName) {
+	protected EntryLoader(YamlBox yamlBox, String uniqueName) {
 		super(yamlBox, uniqueName);
 	}
 
@@ -40,17 +40,17 @@ public class EntryResolver extends ResolverBase {
 		for (Field field : selector.apply(clazz)) {
 			NodeInf inf = this.getNodeInf(field);
 			Class<?> fieldType = field.getType();
-			ResolverBase resolver = inf.getResolver();
+			LoaderBase loader = inf.getLoader();
 			Object obj = config.getObjectDeep(inf.getKey());
 			try {
-				if (resolver instanceof EntryResolver) {
-					((EntryResolver) resolver).resolve(clazz, inf.getSelector(), config.getSectionDeep(path),
+				if (loader instanceof EntryLoader) {
+					((EntryLoader) loader).resolve(clazz, inf.getSelector(), config.getSectionDeep(path),
 							inf.getRealPath(path));
 				} else {
 					if (fieldType.isPrimitive()) {
-						handlePrimitiveType(field, fieldType, instance, obj, resolver, inf.getRealPath(path));
+						handlePrimitiveType(field, fieldType, instance, obj, loader, inf.getRealPath(path));
 					} else {
-						Object value = resolver.resolve(fieldType, field.getGenericType(), obj, inf.getRealPath(path));
+						Object value = loader.resolve(fieldType, field.getGenericType(), obj, inf.getRealPath(path));
 						field.set(instance, value);
 					}
 				}
@@ -66,7 +66,7 @@ public class EntryResolver extends ResolverBase {
 	}
 
 	private final void handlePrimitiveType(Field field, Class<?> fieldType, Object instance, Object obj,
-			ResolverBase resolver, String path) throws IllegalAccessException {
+			LoaderBase resolver, String path) throws IllegalAccessException {
 		if (int.class == fieldType) {
 			int i = resolver.resolveAsInt(obj, path);
 			field.setInt(instance, i);
@@ -94,17 +94,17 @@ public class EntryResolver extends ResolverBase {
 			Class<?> type = obj.getClass();
 			Type genericType = field.getGenericType();
 			NodeInf inf = this.getNodeInf(field);
-			ResolverBase resolver = inf.getResolver();
+			LoaderBase loader = inf.getLoader();
 			try {
-				if (resolver instanceof EntryResolver) {
-					EntryResolver entryResolver = (EntryResolver) resolver;
+				if (loader instanceof EntryLoader) {
+					EntryLoader entryLoader = (EntryLoader) loader;
 					@SuppressWarnings("unchecked")
 					Class<YamlSerializable> entryType = (Class<YamlSerializable>) type;
-					Map<String, Object> map = entryResolver.store(entryType, inf.getSelector(), (YamlSerializable) obj,
+					Map<String, Object> map = entryLoader.store(entryType, inf.getSelector(), (YamlSerializable) obj,
 							path);
 					storeMap.put(inf.getKey(), map);
 				} else {
-					Object real = inf.getResolver().store(type, genericType, obj, inf.getRealPath(path));
+					Object real = inf.getLoader().store(type, genericType, obj, inf.getRealPath(path));
 					storeMap.put(inf.getKey(), real);
 				}
 			} catch (Exception e) {

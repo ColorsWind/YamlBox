@@ -1,4 +1,4 @@
-package net.colors_wind.yamlbox.resolve;
+package net.colors_wind.yamlbox.loader;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -23,7 +23,7 @@ import lombok.Getter;
 import lombok.Setter;
 import net.colors_wind.yamlbox.YamlBox;
 
-public class UniversalResolver extends ResolverBase {
+public class UniversalLoader extends LoaderBase {
 
 	public static final String UNIVERSAL = "universal";
 	public static final Set<Class<?>> ACCEPT_FINAL = new HashSet<>();
@@ -34,11 +34,11 @@ public class UniversalResolver extends ResolverBase {
 		ACCEPT_FINAL.addAll(Arrays.asList(double.class, Double.class, OptionalDouble.class));
 	}
 	
-	public UniversalResolver(YamlBox yamlBox) {
+	public UniversalLoader(YamlBox yamlBox) {
 		super(yamlBox, UNIVERSAL);
 	}
 	
-	protected UniversalResolver(YamlBox yamlBox, String uniqueName) {
+	protected UniversalLoader(YamlBox yamlBox, String uniqueName) {
 		super(yamlBox, uniqueName);
 	}
 

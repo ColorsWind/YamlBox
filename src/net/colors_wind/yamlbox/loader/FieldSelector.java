@@ -1,4 +1,4 @@
-package net.colors_wind.yamlbox.resolve;
+package net.colors_wind.yamlbox.loader;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
