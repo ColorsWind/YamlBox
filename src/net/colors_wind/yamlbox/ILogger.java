@@ -1,4 +1,4 @@
-package net.colors_wind.yamlbox.loader;
+package net.colors_wind.yamlbox;
 
 import java.util.logging.Level;
 

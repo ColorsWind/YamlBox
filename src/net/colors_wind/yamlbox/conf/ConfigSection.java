@@ -1,4 +1,4 @@
-package net.colors_wind.yamlbox;
+package net.colors_wind.yamlbox.conf;
 
 import java.util.LinkedHashMap;
 import java.util.Map;

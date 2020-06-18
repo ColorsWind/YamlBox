@@ -8,8 +8,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
-import net.colors_wind.yamlbox.ConfigSection;
 import net.colors_wind.yamlbox.YamlBox;
+import net.colors_wind.yamlbox.conf.ConfigSection;
 import net.colors_wind.yamlbox.tag.SerializeNode;
 import net.colors_wind.yamlbox.tag.YamlSerializable;
 
