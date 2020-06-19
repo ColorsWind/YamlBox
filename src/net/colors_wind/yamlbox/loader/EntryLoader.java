@@ -13,6 +13,13 @@ import net.colors_wind.yamlbox.conf.ConfigSection;
 import net.colors_wind.yamlbox.tag.SerializeNode;
 import net.colors_wind.yamlbox.tag.YamlSerializable;
 
+/**
+ * 对象加载器, 可处理自定义 {@link YamlSerializable} 类型.
+ * @see {@link #ENTRY}
+ * @author colors_wind
+ * @date 2020/6/19
+ * @since 1.0.0
+ */
 public class EntryLoader extends LoaderBase {
 
 	public static final String ENTRY = "entry";

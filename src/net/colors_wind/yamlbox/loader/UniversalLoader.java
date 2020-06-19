@@ -23,6 +23,13 @@ import lombok.Getter;
 import lombok.Setter;
 import net.colors_wind.yamlbox.YamlBox;
 
+/**
+ * 通用加载器, 可处理 {@link #ACCEPT_FINAL} 和 {@link enum} 类型.
+ * @see {@link #UNIVERSAL}
+ * @author colors_wind
+ * @date 2020/6/19
+ * @since 1.0.0
+ */
 public class UniversalLoader extends LoaderBase {
 
 	public static final String UNIVERSAL = "universal";
